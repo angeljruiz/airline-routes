@@ -1397,5 +1397,6 @@ const airports = [
 
 const getAirlineById = (id) => airlines.find( airline => airline.id === id ).name
 const getAirportByCode = (code) => airports.find( airport => airport.code === code ).name
+const formatValue = (property, value) => property === 'airline' ? getAirlineById(value) : getAirportByCode(value)
 
-export default { routes, airlines, airports, getAirlineById, getAirportByCode };
+export default { routes, airlines, airports, getAirlineById, getAirportByCode, formatValue };
