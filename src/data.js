@@ -1395,4 +1395,7 @@ const airports = [
 
 ];
 
-export default {routes, airlines, airports};
+const getAirlineById = (id) => airlines.find( airline => airline.id === id ).name
+const getAirportByCode = (code) => airports.find( airport => airport.code === code ).name
+
+export default { routes, airlines, airports, getAirlineById, getAirportByCode };

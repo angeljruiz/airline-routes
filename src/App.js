@@ -3,6 +3,10 @@ import './App.css';
 
 import data from './data'
 
+const { routes, getAirlineById, getAirportByCode } = data
+
+console.log(getAirlineById(2143));
+
 const App = () => (
   <div className="app">
   <header className="header">
@@ -19,11 +23,11 @@ const App = () => (
           <th>Source</th>
           <th>Destination</th>
         </tr>
-        { data.routes.map( route => (<>
+        { routes.map( route => (<>
           <tr>
-            <td>{route.airline}</td>
-            <td>{route.src}</td>
-            <td>{route.dest}</td>
+            <td>{getAirlineById(route.airline)}</td>
+            <td>{getAirportByCode(route.src)}</td>
+            <td>{getAirportByCode(route.dest)}</td>
           </tr>
         </>))}
       </thead>
