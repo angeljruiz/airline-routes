@@ -2440,5 +2440,5 @@ const getAirportByCode = (code) => airports.find((airport) => airport.code === c
 const formatValue = (property, value) => (property === 'airline' ? getAirlineById(value) : getAirportByCode(value));
 
 export default {
-  routes, airlines, airports, getAirlineById, getAirportByCode, formatValue
+  routes, airlines, airports, formatValue,
 };

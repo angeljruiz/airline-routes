@@ -6,18 +6,17 @@ export default function Map({ routes }) {
       <g transform="scale(1 -1)">
         <image xlinkHref="equirectangular_world.jpg" href="equirectangular_world.jpg" x="-180" y="-90" height="100%" width="100%" transform="scale(1 -1)" />
 
-        {/* for each route */}
-        {/* <g key="">
-          <circle className="source" cx={x1} cy={y1}>
-            <title></title>
-          </circle>
-          <circle className="destination" cx={x1} cy={y1}>
-            <title></title>
-          </circle>
-          <path d={`M${x1} ${y1} L ${x2} ${y2}`} />
-        </g> */}
-        {/* end route */}
-
+        {routes.map( (route, i) => (
+          <g key={i}>
+            <circle className="source" cx={route.srcLong} cy={route.srcLat}>
+              <title></title>
+            </circle>
+            <circle className="destination" cx={route.destLong} cy={route.destLat}>
+              <title></title>
+            </circle>
+            <path d={`M${route.srcLong} ${route.srcLat} L ${route.destLong} ${route.destLat}`} />
+          </g>
+        ))}
       </g>
     </svg>
   );
