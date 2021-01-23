@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Button } from '@material-ui/core';
 import './App.css';
 
@@ -14,15 +14,14 @@ const {
 
 const App = () => {
   const [page, setPage] = useState(0);
+  const [root] = useState(generateRoot());
   const [airlineFilter, setAirlineFilter] = useState('all');
   const [airportFilter, setAirportFilter] = useState('all');
+  const [filteredRoutes, setFilteredRoutes] = useState(routes);
   const [filteredAirlines, setFilteredAirlines] = useState(airlines);
   const [filteredAirports, setFilteredAirports] = useState(airports);
 
-  let filteredRoutes = routes
-
   const perPage = 50;
-  const router = generateRouteStructure();
   const maxPage = Math.ceil(routes.length / perPage);
   const columns = [
     { name: 'Airline', property: 'airline' },
@@ -30,49 +29,80 @@ const App = () => {
     { name: 'Destination Airport', property: 'dest' },
   ];
 
-  if (airlineFilter !== 'all') {
-    filteredRoutes = filteredRoutes.filter((route) => route.airline === Number(airlineFilter));
-  }
-  if (airportFilter !== 'all') {
-    filteredRoutes = filteredRoutes.filter((route) => route.src === airportFilter || route.dest === airportFilter);
-  }
+  const generateRoutes = useCallback( () => {
+    const generateRoute = (airline, src, dest) => ({
+      airline: airline, 
+      src: src, 
+      srcLat: root[src].lat, 
+      srcLong: root[src].long, 
+      dest: dest,
+      destLat: root[dest].lat,
+      destLong: root[dest].long
+    });
 
-  filteredRoutes = filteredRoutes.map( route => ({
-    ...route,
-    srcLat: router[route.src].lat,
-    srcLong: router[route.src].long,
-    destLat: router[route.dest].lat,
-    destLong: router[route.dest].long,
-  }))
+    if (airlineFilter !== 'all' && airportFilter !== 'all') {
+      return root[airlineFilter].routes.reduce( (result, route) => {
+        if (route.src === airportFilter || route.dest === airportFilter)
+          result.push(generateRoute(Number(airlineFilter), route.src, route.dest))
+        return result
+      }, [] )
+    } else if (airlineFilter !== 'all') {
+      return root[airlineFilter].routes.reduce( (result, route) => {
+        result.push(generateRoute(Number(airlineFilter), route.src, route.dest))
+        return result
+      }, [] )
+    } else if (airportFilter !== 'all') {
+      return root[airportFilter].routes.reduce( (result, route) => {
+        if (route.src)
+          result.push(generateRoute(route.airline, route.src, airportFilter))
+        else
+          result.push(generateRoute(route.airline, airportFilter, route.dest))
+        return result
+      }, [] )
+    } else {
+      return routes.map( route => generateRoute(route.airline, route.src, route.dest))
+    }
+  }, [airlineFilter, airportFilter, root])
 
-  function generateRouteStructure() {
-    const router = {};
+  useEffect( () => setFilteredRoutes(generateRoutes()), [generateRoutes])
+
+  function generateRoot() {
+    const root = {};
 
     routes.forEach((route) => {
       const selectedAirline = airlines.find((airline) => airline.id === route.airline);
       const selectedSrc = airports.find((airport) => airport.code === route.src);
       const selectedDest = airports.find((airport) => airport.code === route.dest);
 
-      if (!router[route.airline]) router[route.airline] = {};
-      if (!router[route.src]) router[route.src] = {};
-      if (!router[route.dest]) router[route.dest] = {};
+      if (!root[route.airline]) root[route.airline] = { routes: [], airports: {} };
+      if (!root[route.src]) root[route.src] = { routes: [], airlines: {} };
+      if (!root[route.dest]) root[route.dest] = { routes: [], airlines: {} };
 
-      router[route.airline][route.src] = true;
-      router[route.airline][route.dest] = true;
-      router[route.airline].name = selectedAirline.name;
+      root[route.airline].airports[route.src] = 'src'
+      root[route.airline].airports[route.dest] = 'dest'
+      root[route.airline].name = selectedAirline.name;
+      root[route.airline].routes.push({ src: route.src, dest: route.dest})
 
-      router[route.src][route.airline] = true;
-      router[route.src].name = selectedSrc.name;
-      router[route.src].lat = selectedSrc.lat;
-      router[route.src].long = selectedSrc.long;
+      root[route.src].airlines[route.airline] = { dest: route.dest }
+      root[route.src].name = selectedSrc.name;
+      root[route.src].lat = selectedSrc.lat;
+      root[route.src].long = selectedSrc.long;
+      root[route.src].routes.push({ airline: route.airline, dest: route.dest })
 
-      router[route.dest][route.airline] = true;
-      router[route.dest].name = selectedDest.name;
-      router[route.dest].lat = selectedDest.lat;
-      router[route.dest].long = selectedDest.long;
+      root[route.dest].airlines[route.airline] = { src: route.src}
+      root[route.dest].name = selectedDest.name;
+      root[route.dest].lat = selectedDest.lat;
+      root[route.dest].long = selectedDest.long;
+      root[route.dest].routes.push({ airline: route.airline, src: route.src });
     });
 
-    return router;
+    return root;
+  }
+
+  function disable(obj, disabled) {
+    const temp = { ...obj };
+    temp.disabled = disabled
+    return temp;
   }
 
   function turnPage(flips) {
@@ -84,70 +114,48 @@ const App = () => {
 
     if (value === 'all') {
       if (airportFilter === 'all') {
-        setFilteredAirlines(airlines);
-        setFilteredAirports(airports);
+        resetFilters()
       } else {
-        setFilteredAirlines(airlines.map((airline) => {
-          const temp = { ...airline };
-          temp.disabled = !router[airportFilter][airline.id];
-          return temp;
-        }));
+        setFilteredAirlines(airlines.map((airline) => disable(airline, !root[airportFilter].airlines[airline.id])));
       }
       return;
     }
 
-    setFilteredAirlines(airlines.map((airline) => {
-      const temp = { ...airline };
-      temp.disabled = airline.id !== Number(value);
-      return temp;
-    }));
+    setFilteredAirlines(airlines.map((airline) => disable(airline, airline.id !== Number(value))));
 
     if (airportFilter === 'all') {
-      setFilteredAirports(airports.map((airport) => {
-        const temp = { ...airport };
-        temp.disabled = !router[value][airport.code];
-        return temp;
-      }));
+      setFilteredAirports(airports.map((airport) => disable(airport, !root[value].airports[airport.code])));
+    }
+  }
+  
+  function handleAirportChange({ target: { value } }) {
+    setAirportFilter(value);
+    
+    if (value === 'all') {
+      if (airlineFilter === 'all') {
+        resetFilters()
+      } else {
+        setFilteredAirports(airports.map((airport) => disable(airport, !root[airlineFilter].airports[airport.code])));
+      }
+      return;
+    }
+    
+    setFilteredAirports(airports.map((airport) => disable(airport, airport.code !== value)));
+    
+    if (airlineFilter === 'all') {
+      setFilteredAirlines(airlines.map((airline) => disable(airline, !root[value].airlines[airline.id])));
     }
   }
 
-  function handleAirportChange({ target: { value } }) {
-    setAirportFilter(value);
-
-    if (value === 'all') {
-      if (airlineFilter === 'all') {
-        setFilteredAirlines(airlines);
-        setFilteredAirports(airports);
-      } else {
-        setFilteredAirports(airports.map((airport) => {
-          const temp = { ...airport };
-          temp.disabled = !router[airlineFilter][airport.code];
-          return temp;
-        }));
-      }
-      return;
-    }
-
-    setFilteredAirports(airports.map((airport) => {
-      const temp = { ...airport };
-      temp.disabled = airport.code !== value;
-      return temp;
-    }));
-
-    if (airlineFilter === 'all') {
-      setFilteredAirlines(airlines.map((airline) => {
-        const temp = { ...airline };
-        temp.disabled = !router[value][airline.id];
-        return temp;
-      }));
-    }
+  function resetFilters() {
+    setFilteredAirlines(airlines);
+    setFilteredAirports(airports);
   }
 
   function clearFilters() {
     setAirportFilter('all');
     setAirlineFilter('all');
-    setFilteredAirlines(airlines);
-    setFilteredAirports(airports);
+    resetFilters();
   }
 
   return (
