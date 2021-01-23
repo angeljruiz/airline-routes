@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Button } from '@material-ui/core';
 import './App.css';
 
 import Map from './components/Map';
@@ -106,7 +105,7 @@ const App = () => {
   }
 
   function turnPage(flips) {
-    if (page + flips >= 0 && page + flips < maxPage) setPage(page + flips);
+    setPage(page + flips);
   }
 
   function handleAirlineChange({ target: { value } }) {
@@ -153,6 +152,7 @@ const App = () => {
   }
 
   function clearFilters() {
+    setPage(0);
     setAirportFilter('all');
     setAirlineFilter('all');
     resetFilters();
@@ -165,7 +165,9 @@ const App = () => {
       </header>
       <section>
         <Map routes={filteredRoutes} />
-
+        <br />
+        <br />
+        Show routes flying out of
         <Select
           options={filteredAirlines}
           valueKey="id"
@@ -174,6 +176,7 @@ const App = () => {
           value={airlineFilter}
           onChange={handleAirlineChange}
         />
+        flying in or out of
         <Select
           options={filteredAirports}
           valueKey="id"
@@ -182,12 +185,17 @@ const App = () => {
           value={airportFilter}
           onChange={handleAirportChange}
         />
+        <button onClick={clearFilters} variant="contained" color="primary">Clear Filters</button>
 
+        <br />
+        <br />
         <Table columns={columns} rows={filteredRoutes} formatValue={formatValue} page={page} perPage={perPage} />
+        
+        <button disabled={page < 1} onClick={() => turnPage(-1)} variant="contained" color="secondary" style={{ marginRight: '16px' }}>Previous Page</button>
+        <button disabled={page + 2 > maxPage} onClick={() => turnPage(1)} variant="contained" color="primary" style={{ marginRight: '16px' }}>Next Page</button>
 
-        <Button onClick={() => turnPage(-1)} variant="contained" color="secondary" style={{ marginRight: '16px' }}>Previous Page</Button>
-        <Button onClick={() => turnPage(1)} variant="contained" color="primary" style={{ marginRight: '16px' }}>Next Page</Button>
-        <Button onClick={clearFilters} variant="contained" color="primary">Clear Filters</Button>
+        <br />
+        <br />
       </section>
     </div>
   );

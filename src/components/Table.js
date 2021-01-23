@@ -7,7 +7,7 @@ export default function Table({
 
   return (
     <>
-      <table>
+      <table className="table routes-table">
         <thead>
           <tr>
             { columns.map((col) => (
