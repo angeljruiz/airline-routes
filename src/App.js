@@ -20,8 +20,6 @@ const App = () => {
   const [filteredAirlines, setFilteredAirlines] = useState(airlines);
   const [filteredAirports, setFilteredAirports] = useState(airports);
 
-  const perPage = 50;
-  const maxPage = Math.ceil(routes.length / perPage);
   const columns = [
     { name: 'Airline', property: 'airline' },
     { name: 'Source Airport', property: 'src' },
@@ -64,6 +62,9 @@ const App = () => {
   }, [airlineFilter, airportFilter, root])
 
   useEffect( () => setFilteredRoutes(generateRoutes()), [generateRoutes])
+
+  const perPage = 50;
+  const maxPage = Math.ceil(filteredRoutes.length / perPage);
 
   function generateRoot() {
     const root = {};
@@ -165,7 +166,7 @@ const App = () => {
       </header>
       <section>
         <Map routes={filteredRoutes} />
-        <br />
+
         <br />
         Show routes flying out of
         <Select
@@ -185,17 +186,12 @@ const App = () => {
           value={airportFilter}
           onChange={handleAirportChange}
         />
-        <button onClick={clearFilters} variant="contained" color="primary">Clear Filters</button>
+        <button onClick={clearFilters} variant="contained" color="primary">All routes</button>
 
-        <br />
-        <br />
         <Table columns={columns} rows={filteredRoutes} formatValue={formatValue} page={page} perPage={perPage} />
         
         <button disabled={page < 1} onClick={() => turnPage(-1)} variant="contained" color="secondary" style={{ marginRight: '16px' }}>Previous Page</button>
         <button disabled={page + 2 > maxPage} onClick={() => turnPage(1)} variant="contained" color="primary" style={{ marginRight: '16px' }}>Next Page</button>
-
-        <br />
-        <br />
       </section>
     </div>
   );
